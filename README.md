@@ -31,20 +31,27 @@
 
 ## 安装
 
-### 方式 1：克隆后安装
+### 方式 1：全局安装（推荐，所有项目可用）
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/ShadowsHunter/product-dev-workflow/main/install.sh) --global
+```
+
+### 方式 2：安装到指定项目
+
+```bash
+bash <(curl -sL https://raw.githubusercontent.com/ShadowsHunter/product-dev-workflow/main/install.sh)
+```
+
+在项目根目录执行，仅当前项目可用。
+
+### 方式 3：克隆后安装
 
 ```bash
 git clone https://github.com/ShadowsHunter/product-dev-workflow.git
 cd product-dev-workflow
-./install.sh /path/to/your/project
-```
-
-### 方式 2：一行命令安装（curl）
-
-在你的项目根目录执行：
-
-```bash
-bash <(curl -sL https://raw.githubusercontent.com/ShadowsHunter/product-dev-workflow/main/install.sh)
+./install.sh --global                    # 全局安装
+./install.sh /path/to/your/project       # 安装到指定项目
 ```
 
 ## 使用方法
