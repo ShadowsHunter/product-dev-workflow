@@ -95,7 +95,55 @@ fi
 
 # Configure permissions to reduce prompts during workflow execution
 SETTINGS_FILE="$CLAUDE_DIR/settings.local.json"
-PERMISSIONS='{
+
+# Convert to native path for node/python on Windows
+if command -v cygpath &>/dev/null; then
+  SETTINGS_FILE_NATIVE="$(cygpath -w "$SETTINGS_FILE")"
+else
+  SETTINGS_FILE_NATIVE="$SETTINGS_FILE"
+fi
+
+if [ -f "$SETTINGS_FILE" ]; then
+  echo "  Updating existing settings.local.json with workflow permissions..."
+  if command -v node &>/dev/null; then
+    SETTINGS_PATH="$SETTINGS_FILE_NATIVE" node -e "
+      const fs = require('fs');
+      const p = process.env.SETTINGS_PATH;
+      const existing = JSON.parse(fs.readFileSync(p, 'utf8'));
+      const newPerms = ['Read','Glob','Grep','Write','Edit',
+        'Bash(mkdir *)','Bash(ls *)','Bash(cat *)','Bash(find *)',
+        'Bash(node *)','Bash(npm *)','Bash(npx *)','Bash(pnpm *)','Bash(yarn *)',
+        'Bash(python *)','Bash(git status*)','Bash(git log*)','Bash(git diff*)'];
+      existing.permissions = existing.permissions || {};
+      existing.permissions.allow = existing.permissions.allow || [];
+      const merged = [...new Set([...existing.permissions.allow, ...newPerms])];
+      existing.permissions.allow = merged;
+      fs.writeFileSync(p, JSON.stringify(existing, null, 2));
+    "
+  elif command -v python3 &>/dev/null || command -v python &>/dev/null; then
+    PYTHON="python3"; command -v python3 &>/dev/null || PYTHON="python"
+    SETTINGS_PATH="$SETTINGS_FILE_NATIVE" $PYTHON -c "
+import json, os
+path = os.environ['SETTINGS_PATH']
+with open(path) as f:
+    existing = json.load(f)
+new_perms = ['Read','Glob','Grep','Write','Edit',
+    'Bash(mkdir *)','Bash(ls *)','Bash(cat *)','Bash(find *)',
+    'Bash(node *)','Bash(npm *)','Bash(npx *)','Bash(pnpm *)','Bash(yarn *)',
+    'Bash(python *)','Bash(git status*)','Bash(git log*)','Bash(git diff*)']
+existing.setdefault('permissions', {}).setdefault('allow', [])
+merged = list(dict.fromkeys(existing['permissions']['allow'] + new_perms))
+existing['permissions']['allow'] = merged
+with open(path, 'w') as f:
+    json.dump(existing, f, indent=2)
+"
+  else
+    echo "  Warning: Could not merge permissions (no node/python). Manual config may be needed."
+  fi
+else
+  echo "  Creating settings.local.json with workflow permissions..."
+  cat > "$SETTINGS_FILE" << 'PERM_EOF'
+{
   "permissions": {
     "allow": [
       "Read",
@@ -118,41 +166,8 @@ PERMISSIONS='{
       "Bash(git diff*)"
     ]
   }
-}'
-
-if [ -f "$SETTINGS_FILE" ]; then
-  echo "  Updating existing settings.local.json with workflow permissions..."
-  # Merge permissions into existing settings
-  if command -v node &>/dev/null; then
-    node -e "
-      const fs = require('fs');
-      const existing = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf8'));
-      const perms = $PERMISSIONS;
-      existing.permissions = existing.permissions || {};
-      existing.permissions.allow = existing.permissions.allow || [];
-      const newPerms = perms.permissions.allow.filter(p => !existing.permissions.allow.includes(p));
-      existing.permissions.allow = [...existing.permissions.allow, ...newPerms];
-      fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(existing, null, 2));
-    "
-  elif command -v python3 &>/dev/null || command -v python &>/dev/null; then
-    PYTHON="python3"; command -v python3 &>/dev/null || PYTHON="python"
-    $PYTHON -c "
-import json, sys
-with open('$SETTINGS_FILE') as f:
-    existing = json.load(f)
-perms = $PERMISSIONS
-existing.setdefault('permissions', {}).setdefault('allow', [])
-new_perms = [p for p in perms['permissions']['allow'] if p not in existing['permissions']['allow']]
-existing['permissions']['allow'].extend(new_perms)
-with open('$SETTINGS_FILE', 'w') as f:
-    json.dump(existing, f, indent=2)
-"
-  else
-    echo "  Warning: Could not merge permissions (no node/python). Manual config may be needed."
-  fi
-else
-  echo "  Creating settings.local.json with workflow permissions..."
-  echo "$PERMISSIONS" > "$SETTINGS_FILE"
+}
+PERM_EOF
 fi
 
 echo ""
