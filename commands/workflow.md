@@ -175,14 +175,15 @@ This is the core orchestration loop, called by all subcommands that advance the 
 2. Read the phase skill: `.claude/skills/[phase-id]/SKILL.md`
 3. Read all input documents (prior approved phase outputs)
 4. Construct the agent prompt using the template from the workflow skill
-5. Spawn a **general-purpose** Agent:
+5. Spawn a **general-purpose** Agent with full autonomy:
    ```
    Agent({
      subagent_type: "general-purpose",
      prompt: "[constructed prompt]",
-     mode: "auto"
+     mode: "bypassPermissions"
    })
    ```
+   The agent MUST be able to read skills, write output documents, create directories, and execute code without any permission prompts.
 6. Wait for the agent to complete
 7. Verify the output file exists (for document-producing phases)
 8. Update state: mark phase as `completed`, set output path
@@ -196,8 +197,8 @@ This is the core orchestration loop, called by all subcommands that advance the 
 3. Construct prompts for both agents
 4. Spawn **two agents in parallel** (both in the same response turn):
    ```
-   Agent({ subagent_type: "general-purpose", prompt: "[agent-1-prompt]", mode: "auto", run_in_background: true })
-   Agent({ subagent_type: "general-purpose", prompt: "[agent-2-prompt]", mode: "auto", run_in_background: true })
+   Agent({ subagent_type: "general-purpose", prompt: "[agent-1-prompt]", mode: "bypassPermissions", run_in_background: true })
+   Agent({ subagent_type: "general-purpose", prompt: "[agent-2-prompt]", mode: "bypassPermissions", run_in_background: true })
    ```
 5. Wait for both to complete
 6. Update state: mark both phases as `completed`

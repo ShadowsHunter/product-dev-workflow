@@ -93,6 +93,68 @@ if [ "$MODE" = "project" ]; then
   mkdir -p "$TARGET_DIR/docs/workflow"
 fi
 
+# Configure permissions to reduce prompts during workflow execution
+SETTINGS_FILE="$CLAUDE_DIR/settings.local.json"
+PERMISSIONS='{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "Bash(mkdir *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(find *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(python *)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)"
+    ]
+  }
+}'
+
+if [ -f "$SETTINGS_FILE" ]; then
+  echo "  Updating existing settings.local.json with workflow permissions..."
+  # Merge permissions into existing settings
+  if command -v node &>/dev/null; then
+    node -e "
+      const fs = require('fs');
+      const existing = JSON.parse(fs.readFileSync('$SETTINGS_FILE', 'utf8'));
+      const perms = $PERMISSIONS;
+      existing.permissions = existing.permissions || {};
+      existing.permissions.allow = existing.permissions.allow || [];
+      const newPerms = perms.permissions.allow.filter(p => !existing.permissions.allow.includes(p));
+      existing.permissions.allow = [...existing.permissions.allow, ...newPerms];
+      fs.writeFileSync('$SETTINGS_FILE', JSON.stringify(existing, null, 2));
+    "
+  elif command -v python3 &>/dev/null || command -v python &>/dev/null; then
+    PYTHON="python3"; command -v python3 &>/dev/null || PYTHON="python"
+    $PYTHON -c "
+import json, sys
+with open('$SETTINGS_FILE') as f:
+    existing = json.load(f)
+perms = $PERMISSIONS
+existing.setdefault('permissions', {}).setdefault('allow', [])
+new_perms = [p for p in perms['permissions']['allow'] if p not in existing['permissions']['allow']]
+existing['permissions']['allow'].extend(new_perms)
+with open('$SETTINGS_FILE', 'w') as f:
+    json.dump(existing, f, indent=2)
+"
+  else
+    echo "  Warning: Could not merge permissions (no node/python). Manual config may be needed."
+  fi
+else
+  echo "  Creating settings.local.json with workflow permissions..."
+  echo "$PERMISSIONS" > "$SETTINGS_FILE"
+fi
+
 echo ""
 echo "Installed: $SKILL_COUNT skills, $CMD_COUNT commands"
 echo ""
