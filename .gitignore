@@ -1,4 +1,4 @@
-# Runtime output (created by workflow, not source code)
+# Runtime output
 docs/workflow/
 
 # OS files
@@ -9,3 +9,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Claude Code local settings (per-project)
+.claude/settings.local.json
