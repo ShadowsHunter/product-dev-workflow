@@ -1,35 +1,37 @@
-# Product Development Workflow
+# 产品开发工作流
 
-AI-driven product development workflow for Claude Code — a structured, stage-gated process from topic selection through delivery.
+> AI 驱动的 Claude Code 产品开发工作流 — 从选题到交付的结构化阶段门控流程。
 
-## Overview
+[English](./README_EN.md)
 
-A 9-phase product development workflow where:
+## 概述
 
-- **Orchestrator** manages phase transitions, state, and approval gates
-- **Phase Skills** define domain knowledge for each stage
-- **Execution Agents** are spawned per phase to produce deliverables
-- **Humans** make decisions and approve at every stage gate
+9 阶段产品开发工作流：
 
-Target: software products (Web apps, SaaS, mobile apps).
+- **编排器（Orchestrator）** 管理阶段流转、状态追踪和审批门控
+- **阶段技能（Phase Skills）** 定义每个阶段的领域知识和执行指南
+- **执行代理（Agents）** 每阶段动态生成，读取技能并产出交付物
+- **人类决策** 每个阶段完成后暂停，等待人工审批
 
-## Phases
+适用场景：软件产品（Web 应用、SaaS、移动应用）。
+
+## 阶段流程
 
 ```
-1. Topic Selection    → Validate and refine the product idea
-2. Market Research    → Competitive analysis, personas, market sizing
-3. Product Design     → Features, user stories, IA, user flows
-4. PRD Writing        → Detailed requirements, acceptance criteria, MVP scope
-5. System Design      → Tech stack, API contract, DB schema (parallel with 6)
-6. UI/UX Design       → Design tokens, layouts, wireframes (parallel with 5)
-7. Frontend + Backend → Parallel development
-8. QA Testing         → Test cases, test execution, bug report
-9. Delivery           → Deployment checklist, env config, verification
+1. 选题评估       → 验证产品创意的可行性和市场信号
+2. 市场研究       → 竞品分析、用户画像、市场规模估算
+3. 产品设计       → 功能规划、用户故事、信息架构、用户流程
+4. 需求文档 (PRD) → 详细需求、验收标准、MVP 范围界定
+5. 系统设计       → 技术栈、API 契约、数据库设计（与阶段 6 并行）
+6. UI/UX 设计     → 设计令牌、页面布局、交互原型（与阶段 5 并行）
+7. 前端 + 后端开发 → 并行开发
+8. QA 测试        → 测试用例、测试执行、缺陷报告
+9. 交付部署       → 部署清单、环境配置、上线验证
 ```
 
-## Installation
+## 安装
 
-### Option 1: Clone and Install
+### 方式 1：克隆后安装
 
 ```bash
 git clone https://github.com/ShadowsHunter/product-dev-workflow.git
@@ -37,83 +39,85 @@ cd product-dev-workflow
 ./install.sh /path/to/your/project
 ```
 
-### Option 2: One-liner (curl)
+### 方式 2：一行命令安装（curl）
+
+在你的项目根目录执行：
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/ShadowsHunter/product-dev-workflow/main/install.sh)
 ```
 
-Run this from your project's root directory.
-
-## Usage
+## 使用方法
 
 ```bash
-# Start a new product workflow
-/workflow start Build a bookkeeping app for freelancers
+# 启动新的产品工作流
+/workflow start 做一个面向自由职业者的记账App
 
-# Check progress
+# 查看当前进度
 /workflow status
 
-# Approve current phase
+# 批准当前阶段，进入下一阶段
 /workflow approve
 
-# Reject and request revision
-/workflow reject Need more detail on competitor pricing
+# 驳回并要求修改
+/workflow reject 竞品定价分析不够详细
 
-# Redo from a specific phase
+# 从指定阶段重新开始
 /workflow redo market-research
 
-# Skip a phase
+# 跳过某个阶段
 /workflow skip ui-ux-design
 ```
 
-## Architecture
+## 架构
+
+安装后的项目结构：
 
 ```
-Project Root
+项目根目录
 ├── .claude/
 │   ├── commands/
-│   │   └── workflow.md          # /workflow command entry point
+│   │   └── workflow.md          # /workflow 命令入口
 │   └── skills/
-│       ├── workflow/             # Orchestrator skill
-│       ├── topic-selection/      # Phase 1
-│       ├── market-research/      # Phase 2
-│       ├── product-design/       # Phase 3
-│       ├── prd-writing/          # Phase 4
-│       ├── system-design/        # Phase 5 (parallel)
-│       ├── ui-ux-design/        # Phase 6 (parallel)
-│       ├── frontend-dev/         # Phase 7a (parallel)
-│       ├── backend-dev/          # Phase 7b (parallel)
-│       ├── qa-testing/           # Phase 8
-│       └── delivery/             # Phase 9
-└── docs/workflow/                # Output documents (created at runtime)
-    ├── workflow-state.json
-    ├── 01-topic-selection.md
-    ├── 02-market-research.md
-    ├── 03-product-design.md
-    ├── 04-prd.md
-    ├── 05-system-design.md
-    ├── 06-ui-ux-design.md
-    ├── 07-test-cases.md
-    ├── 08-test-report.md
-    └── 09-delivery-checklist.md
+│       ├── workflow/             # 编排器技能
+│       ├── topic-selection/      # 阶段 1：选题评估
+│       ├── market-research/      # 阶段 2：市场研究
+│       ├── product-design/       # 阶段 3：产品设计
+│       ├── prd-writing/          # 阶段 4：需求文档
+│       ├── system-design/        # 阶段 5：系统设计（并行）
+│       ├── ui-ux-design/        # 阶段 6：UI/UX 设计（并行）
+│       ├── frontend-dev/         # 阶段 7a：前端开发（并行）
+│       ├── backend-dev/          # 阶段 7b：后端开发（并行）
+│       ├── qa-testing/           # 阶段 8：QA 测试
+│       └── delivery/             # 阶段 9：交付部署
+└── docs/workflow/                # 输出文档（运行时生成）
+    ├── workflow-state.json       # 工作流状态
+    ├── 01-topic-selection.md     # 选题报告
+    ├── 02-market-research.md     # 市场研究报告
+    ├── 03-product-design.md      # 产品设计文档
+    ├── 04-prd.md                 # PRD 文档
+    ├── 05-system-design.md       # 系统设计文档
+    ├── 06-ui-ux-design.md        # UI/UX 设计规范
+    ├── 07-test-cases.md          # 测试用例
+    ├── 08-test-report.md         # 测试报告
+    └── 09-delivery-checklist.md  # 交付清单
 ```
 
-## How It Works
+## 工作原理
 
-1. `/workflow start` initializes state and spawns the first agent
-2. Each agent reads its skill, reads prior phase outputs, produces its deliverable
-3. After each phase, the orchestrator pauses for human approval
-4. Human runs `/workflow approve` to proceed or `/workflow reject` to redo
-5. System Design + UI/UX Design run in parallel (Phase 5+6)
-6. Frontend Dev + Backend Dev run in parallel (Phase 7)
-7. State persists in `workflow-state.json` — survives `/clear` and session restarts
+1. `/workflow start` 初始化状态文件，生成第一个阶段的执行代理
+2. 每个代理读取对应的技能文件和前置阶段文档，执行并产出交付物
+3. 阶段完成后，编排器暂停并展示审批门控
+4. 人类执行 `/workflow approve` 继续或 `/workflow reject` 打回重做
+5. 系统设计和 UI/UX 设计并行执行（阶段 5 + 6）
+6. 前端开发和后端开发并行执行（阶段 7）
+7. 所有状态保存在 `workflow-state.json`，支持 `/clear` 和跨会话恢复
 
-## Requirements
+## 环境要求
 
-- Claude Code CLI or Claude Code desktop app
-- No external dependencies
+- Claude Code CLI 或 Claude Code 桌面版
+- 无额外依赖
 
-## License
+## 许可证
 
 MIT
