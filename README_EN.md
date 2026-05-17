@@ -9,7 +9,7 @@ A 9-phase product development workflow where:
 - **Orchestrator** manages phase transitions, state, and approval gates
 - **Phase Skills** define domain knowledge for each stage
 - **Execution Agents** are spawned per phase to produce deliverables
-- **Humans** make decisions and approve at every stage gate
+- **Humans** make decisions and approve at every stage gate (or use `--auto` for unattended runs)
 
 Target: software products (Web apps, SaaS, mobile apps).
 
@@ -50,6 +50,15 @@ Run this from your project's root directory.
 ```bash
 # Start a new product workflow
 /workflow start Build a bookkeeping app for freelancers
+
+# Start in autopilot mode (no approval gates)
+/workflow start --auto Build a bookkeeping app for freelancers
+
+# Pause autopilot (switch to manual mode)
+/workflow reject Need to adjust the product design direction
+
+# Resume autopilot
+/workflow approve --auto
 
 # Check progress
 /workflow status
@@ -103,7 +112,7 @@ Project Root
 
 1. `/workflow start` initializes state and spawns the first agent
 2. Each agent reads its skill, reads prior phase outputs, produces its deliverable
-3. After each phase, the orchestrator pauses for human approval
+3. After each phase, the orchestrator pauses for human approval (in `--auto` mode, phases are auto-approved)
 4. Human runs `/workflow approve` to proceed or `/workflow reject` to redo
 5. System Design + UI/UX Design run in parallel (Phase 5+6)
 6. Frontend Dev + Backend Dev run in parallel (Phase 7)

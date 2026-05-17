@@ -170,6 +170,84 @@ else
 PERM_EOF
 fi
 
+# Copy and merge settings.json (hooks, permissions)
+SHARED_SETTINGS="$CLAUDE_DIR/settings.json"
+SOURCE_SETTINGS="$SCRIPT_DIR/.claude/settings.json"
+
+if [ -f "$SOURCE_SETTINGS" ]; then
+  SETTINGS_NATIVE="$SHARED_SETTINGS"
+  if command -v cygpath &>/dev/null; then
+    SETTINGS_NATIVE="$(cygpath -w "$SHARED_SETTINGS")"
+  fi
+
+  if [ -f "$SHARED_SETTINGS" ]; then
+    echo "  Merging shared settings.json..."
+    if command -v node &>/dev/null; then
+      TARGET_SETTINGS="$SETTINGS_NATIVE" SOURCE_SETTINGS_NATIVE="$(if command -v cygpath &>/dev/null; then cygpath -w "$SOURCE_SETTINGS"; else echo "$SOURCE_SETTINGS"; fi)" node -e "
+        const fs = require('fs');
+        const target = JSON.parse(fs.readFileSync(process.env.TARGET_SETTINGS, 'utf8'));
+        const source = JSON.parse(fs.readFileSync(process.env.SOURCE_SETTINGS_NATIVE, 'utf8'));
+        if (source.permissions && source.permissions.allow) {
+          target.permissions = target.permissions || {};
+          target.permissions.allow = target.permissions.allow || [];
+          const merged = [...new Set([...target.permissions.allow, ...source.permissions.allow])];
+          target.permissions.allow = merged;
+        }
+        if (source.hooks) {
+          target.hooks = target.hooks || {};
+          for (const [event, hooks] of Object.entries(source.hooks)) {
+            const existing = target.hooks[event] || [];
+            const combined = [...existing, ...hooks];
+            const seen = new Set();
+            target.hooks[event] = combined.filter(h => {
+              const key = JSON.stringify(h);
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          }
+        }
+        fs.writeFileSync(process.env.TARGET_SETTINGS, JSON.stringify(target, null, 2));
+      "
+    elif command -v python3 &>/dev/null || command -v python &>/dev/null; then
+      PYTHON="python3"; command -v python3 &>/dev/null || PYTHON="python"
+      SOURCE_NATIVE="$(if command -v cygpath &>/dev/null; then cygpath -w "$SOURCE_SETTINGS"; else echo "$SOURCE_SETTINGS"; fi)"
+      TARGET_SETTINGS="$SETTINGS_NATIVE" SOURCE_SETTINGS_NATIVE="$SOURCE_NATIVE" $PYTHON -c "
+import json, os
+target_path = os.environ['TARGET_SETTINGS']
+source_path = os.environ['SOURCE_SETTINGS_NATIVE']
+with open(target_path) as f: target = json.load(f)
+with open(source_path) as f: source = json.load(f)
+if 'permissions' in source and 'allow' in source['permissions']:
+    target.setdefault('permissions', {}).setdefault('allow', [])
+    merged = list(dict.fromkeys(target['permissions']['allow'] + source['permissions']['allow']))
+    target['permissions']['allow'] = merged
+if 'hooks' in source:
+    target.setdefault('hooks', {})
+    for event, hooks in source['hooks'].items():
+        existing = target['hooks'].get(event, [])
+        combined = existing + hooks
+        seen = set()
+        merged = []
+        for h in combined:
+            key = json.dumps(h, sort_keys=True)
+            if key not in seen:
+                seen.add(key)
+                merged.append(h)
+        target['hooks'][event] = merged
+with open(target_path, 'w') as f: json.dump(target, f, indent=2)
+"
+    else
+      echo "  Warning: Could not merge settings.json (no node/python). Skipping settings merge."
+      echo "  You may need to manually configure permissions and hooks."
+    fi
+  else
+    echo "  Creating shared settings.json..."
+    cp "$SOURCE_SETTINGS" "$SHARED_SETTINGS"
+  fi
+  echo "  Settings: merged"
+fi
+
 echo ""
 echo "Installed: $SKILL_COUNT skills, $CMD_COUNT commands"
 echo ""
@@ -180,7 +258,8 @@ else
 fi
 echo ""
 echo "Usage:"
-echo "  /workflow start <your product idea>"
+echo "  /workflow start <your product idea>         # Manual mode (approve each phase)"
+echo "  /workflow start --auto <your product idea>  # Autopilot (runs end-to-end)"
 echo "  /workflow status"
 echo ""
 echo "Done!"

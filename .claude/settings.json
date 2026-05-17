@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "Agent",
+      "Skill(*)",
+      "Bash(git *)",
+      "Bash(python *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(pip *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)",
+      "Bash(bash *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(test *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"import sys,json,re\ndata=json.load(sys.stdin)\nfp=data.get('tool_input',{}).get('file_path','')\nif not fp.endswith('SKILL.md'):sys.exit(0)\ntry:\n f=open(fp,'r',encoding='utf-8');c=f.read();f.close()\nexcept:sys.exit(0)\nif not c.startswith('---'):print(json.dumps({'systemMessage':'SKILL.md missing YAML frontmatter block'}));sys.exit(0)\nm=re.match(r'^---\\n(.*?)\\n---',c,re.DOTALL)\nif not m:print(json.dumps({'systemMessage':'SKILL.md has malformed YAML frontmatter'}));sys.exit(0)\nfm=m.group(1)\nmissing=[x.rstrip(':') for x in ['name:','description:','origin:'] if x not in fm]\nif missing:print(json.dumps({'systemMessage':'SKILL.md frontmatter missing: '+', '.join(missing)}))\" 2>/dev/null || true",
+            "timeout": 15,
+            "statusMessage": "Validating SKILL.md frontmatter..."
+          }
+        ]
+      }
+    ]
+  }
+}
