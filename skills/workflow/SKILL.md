@@ -65,13 +65,71 @@ After qa-testing approved → start delivery
 After delivery approved → WORKFLOW COMPLETE
 ```
 
-### QA Rejection Loop
+### QA Fix-Retest Loop (Automatic)
 
-When qa-testing is rejected:
+The QA phase runs an internal fix-retest loop. The orchestrator drives this loop automatically — the human is NOT consulted between rounds.
+
+```
+Round 1:
+  1. Spawn QA agent → runs tests → produces test report
+  2. Read the test report
+  3. Check for P0/P1 bugs:
+     IF P0/P1 bugs exist:
+       → Spawn fix agents (frontend-dev + backend-dev in parallel)
+         with the bug list as context
+       → Wait for fixes to complete
+       → GOTO Round 2
+     ELSE:
+       → QA phase complete, produce final report
+       → Open approval gate for human
+
+Round N (max 5):
+  1. Spawn QA agent again → re-runs ALL tests → updates test report
+  2. Check for remaining P0/P1 bugs:
+     IF P0/P1 bugs still exist AND round < 5:
+       → Spawn fix agents with remaining bug list
+       → Wait for fixes
+       → GOTO Round N+1
+     IF P0/P1 bugs exist AND round >= 5:
+       → Produce final report with WARNING
+       → Open approval gate — let human decide
+     ELSE (no P0/P1 bugs):
+       → Produce final report
+       → Open approval gate for human
+```
+
+Fix agent prompt template (for each round):
+```
+You are the bug-fix specialist for [project-name].
+
+## Context
+The QA tester found the following P0/P1 bugs in Round [N]:
+
+[Paste bug list from test report]
+
+## Your Task
+Fix ALL of these bugs. For each bug:
+1. Identify the root cause
+2. Implement the fix
+3. Verify the fix works locally
+
+## Tech Stack
+Read .claude/skills/[frontend-dev/backend-dev]/SKILL.md for reference.
+
+## After Fixing
+Report what you changed and which bugs were addressed.
+```
+
+The QA agent is re-spawned for each round (fresh context with the latest code state). It runs ALL tests, not just the previously failing ones, to catch regressions.
+
+### Human Rejection After QA
+
+When the human rejects the QA phase (for P2/P3 issues or other reasons):
 1. Mark qa-testing as `rejected` with the reason
-2. Reset both frontend-dev and backend-dev to `pending`
-3. Set currentPhase to `frontend-dev,backend-dev`
-4. Re-spawn both agents with the rejection feedback appended to their context
+2. Spawn fix agents with the rejection feedback
+3. After fixes complete, re-run QA from Round 1
+4. The internal fix-retest loop runs again
+5. Only open the approval gate when P0/P1 are clear
 
 ### Sequential → Parallel Transition
 

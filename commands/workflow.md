@@ -211,12 +211,55 @@ For `frontend-dev` and `backend-dev`, the agents write running code instead of d
 - Verify the code runs (check for build errors)
 - No output file path in state
 
-### QA Testing with Prior Rejection:
+### QA Testing (automatic fix-retest loop):
 
-If `qa-testing` was previously rejected and is being re-run:
-- The scheduling algorithm resets `frontend-dev` and `backend-dev` to pending
-- Both are re-spawned with the rejection feedback
-- After both complete, QA testing runs again
+QA testing has a built-in fix-retest loop that runs WITHOUT human intervention:
+
+```
+ROUND = 1
+MAX_ROUNDS = 5
+
+LOOP:
+  1. Spawn QA agent:
+     Agent({
+       subagent_type: "general-purpose",
+       prompt: "[QA prompt with round number]",
+       mode: "bypassPermissions"
+     })
+  2. Wait for QA agent to complete
+  3. Read test report: docs/workflow/08-test-report.md
+  4. Count P0 and P1 bugs in the report
+  5. IF P0/P1 bugs == 0 OR ROUND >= MAX_ROUNDS:
+       → EXIT LOOP
+       → Display final test report
+       → IF P0/P1 bugs remain: show WARNING
+       → Open approval gate
+  6. ELSE (P0/P1 bugs exist):
+       → Display: "Round [ROUND]: [N] P0/P1 bugs found — spawning fix agents..."
+       → Spawn fix agents IN PARALLEL:
+         Agent({ subagent_type: "general-purpose",
+           prompt: "[frontend fix prompt with P0/P1 bug list]",
+           mode: "bypassPermissions", run_in_background: true })
+         Agent({ subagent_type: "general-purpose",
+           prompt: "[backend fix prompt with P0/P1 bug list]",
+           mode: "bypassPermissions", run_in_background: true })
+       → Wait for both to complete
+       → ROUND = ROUND + 1
+       → GOTO LOOP
+```
+
+Key rules for the QA loop:
+- The human does NOT see intermediate rounds — only the final result
+- Each round re-runs ALL tests (catch regressions, not just verify fixes)
+- After max 5 rounds, stop and let human decide
+- The approval gate only opens when P0/P1 are clear or max rounds reached
+
+### Human Rejection After QA:
+
+When the human rejects the QA phase:
+1. Use rejection feedback as context for fix agents
+2. Run the fix-retest loop from Round 1
+3. Only open the approval gate again when P0/P1 are clear
 
 ---
 
